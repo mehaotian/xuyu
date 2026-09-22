@@ -1,7 +1,7 @@
 // Package parser 将 Token 组成 AST。
 //
-// 当前实现多条赋值语句，右值可以是整数或已经定义的变量。更复杂的
-// 表达式会在后续里程碑中加入。
+// 当前实现多条赋值语句，右值支持整数、变量和四则运算。加减、乘除和
+// 括号分别由不同层级处理，保持运算优先级明确。
 package parser
 
 import (
@@ -78,7 +78,7 @@ func (p *Parser) parseAssignment() (ast.Assignment, error) {
 		return ast.Assignment{}, err
 	}
 
-	value, err := p.parseValue()
+	value, err := p.parseExpression()
 	if err != nil {
 		return ast.Assignment{}, err
 	}
@@ -90,7 +90,63 @@ func (p *Parser) parseAssignment() (ast.Assignment, error) {
 	}, nil
 }
 
-func (p *Parser) parseValue() (ast.Expression, error) {
+func (p *Parser) parseExpression() (ast.Expression, error) {
+	return p.parseAdditive()
+}
+
+func (p *Parser) parseAdditive() (ast.Expression, error) {
+	left, err := p.parseMultiplicative()
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		operator := p.current()
+		if operator.Kind != token.KindPlus && operator.Kind != token.KindMinus {
+			return left, nil
+		}
+		p.index++
+
+		right, err := p.parseMultiplicative()
+		if err != nil {
+			return nil, err
+		}
+		left = ast.BinaryExpression{
+			Left:     left,
+			Operator: binaryOperator(operator.Kind),
+			Right:    right,
+			Range:    source.Span{Start: left.Span().Start, End: right.Span().End},
+		}
+	}
+}
+
+func (p *Parser) parseMultiplicative() (ast.Expression, error) {
+	left, err := p.parsePrimary()
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		operator := p.current()
+		if operator.Kind != token.KindStar && operator.Kind != token.KindSlash {
+			return left, nil
+		}
+		p.index++
+
+		right, err := p.parsePrimary()
+		if err != nil {
+			return nil, err
+		}
+		left = ast.BinaryExpression{
+			Left:     left,
+			Operator: binaryOperator(operator.Kind),
+			Right:    right,
+			Range:    source.Span{Start: left.Span().Start, End: right.Span().End},
+		}
+	}
+}
+
+func (p *Parser) parsePrimary() (ast.Expression, error) {
 	current := p.current()
 	switch current.Kind {
 	case token.KindInteger:
@@ -110,8 +166,33 @@ func (p *Parser) parseValue() (ast.Expression, error) {
 			Name:  current.Lexeme,
 			Range: current.Span,
 		}, nil
+	case token.KindLeftParen:
+		p.index++
+		expression, err := p.parseExpression()
+		if err != nil {
+			return nil, err
+		}
+		if _, err := p.expect(token.KindRightParen, "右括号"); err != nil {
+			return nil, err
+		}
+		return expression, nil
 	default:
-		return nil, p.errorAt(current, fmt.Sprintf("期望整数或变量，实际%s", current.Kind))
+		return nil, p.errorAt(current, fmt.Sprintf("期望整数、变量或左括号，实际%s", current.Kind))
+	}
+}
+
+func binaryOperator(kind token.Kind) ast.BinaryOperator {
+	switch kind {
+	case token.KindPlus:
+		return ast.OperatorAdd
+	case token.KindMinus:
+		return ast.OperatorSubtract
+	case token.KindStar:
+		return ast.OperatorMultiply
+	case token.KindSlash:
+		return ast.OperatorDivide
+	default:
+		panic("不是二元运算符")
 	}
 }
 

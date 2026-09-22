@@ -15,6 +15,12 @@ func TestKindString(t *testing.T) {
 		{kind: KindIdentifier, want: "标识符"},
 		{kind: KindInteger, want: "整数"},
 		{kind: KindEqual, want: "等号"},
+		{kind: KindPlus, want: "加号"},
+		{kind: KindMinus, want: "减号"},
+		{kind: KindStar, want: "乘号"},
+		{kind: KindSlash, want: "除号"},
+		{kind: KindLeftParen, want: "左括号"},
+		{kind: KindRightParen, want: "右括号"},
 		{kind: KindEOF, want: "文件结束"},
 	}
 

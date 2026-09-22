@@ -49,6 +49,18 @@ func TestRunSourceFile(t *testing.T) {
 	}
 }
 
+func TestRunArithmeticSourceFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "整数表达式.中")
+	if err := os.WriteFile(path, []byte("设置 基数 = 10\n设置 总数 = (基数 + 2) * 3 - 4 / 2\n"), 0o600); err != nil {
+		t.Fatalf("创建测试源码失败：%v", err)
+	}
+
+	output := run([]string{"运行", path})
+	if output != "环境[基数=10, 总数=34]\n" {
+		t.Fatalf("表达式运行输出不正确：%q", output)
+	}
+}
+
 func TestRunWithoutPathReportsUsage(t *testing.T) {
 	output := run([]string{"运行"})
 	if !strings.HasPrefix(output, "运行命令需要一个源码文件路径") {

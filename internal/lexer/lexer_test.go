@@ -55,6 +55,44 @@ func TestLexesLineBreakAndUnicodePosition(t *testing.T) {
 	}
 }
 
+func TestLexesArithmeticOperators(t *testing.T) {
+	tokens, err := Lex("设置 总数 = (名字 + 2) * 3 - 4 / 2")
+	if err != nil {
+		t.Fatalf("词法分析失败：%v", err)
+	}
+
+	want := []struct {
+		kind   token.Kind
+		lexeme string
+	}{
+		{kind: token.KindKeyword, lexeme: "设置"},
+		{kind: token.KindIdentifier, lexeme: "总数"},
+		{kind: token.KindEqual, lexeme: "="},
+		{kind: token.KindLeftParen, lexeme: "("},
+		{kind: token.KindIdentifier, lexeme: "名字"},
+		{kind: token.KindPlus, lexeme: "+"},
+		{kind: token.KindInteger, lexeme: "2"},
+		{kind: token.KindRightParen, lexeme: ")"},
+		{kind: token.KindStar, lexeme: "*"},
+		{kind: token.KindInteger, lexeme: "3"},
+		{kind: token.KindMinus, lexeme: "-"},
+		{kind: token.KindInteger, lexeme: "4"},
+		{kind: token.KindSlash, lexeme: "/"},
+		{kind: token.KindInteger, lexeme: "2"},
+		{kind: token.KindEOF, lexeme: ""},
+	}
+
+	if len(tokens) != len(want) {
+		t.Fatalf("Token 数量不正确：得到 %d，想要 %d", len(tokens), len(want))
+	}
+	for index, expected := range want {
+		got := tokens[index]
+		if got.Kind != expected.kind || got.Lexeme != expected.lexeme {
+			t.Fatalf("第 %d 个 Token 不正确：得到 %s，想要 %s(%q)", index, got, expected.kind, expected.lexeme)
+		}
+	}
+}
+
 func TestKeywordMustMatchTheWholeIdentifier(t *testing.T) {
 	tokens, err := Lex("设置值")
 	if err != nil {

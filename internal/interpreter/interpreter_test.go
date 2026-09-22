@@ -50,6 +50,31 @@ func TestRunVariableReference(t *testing.T) {
 	}
 }
 
+func TestRunArithmeticExpression(t *testing.T) {
+	program := parseSource(t, "设置 基数 = 10\n设置 总数 = (基数 + 2) * 3 - 4 / 2")
+
+	environment, err := Run(program)
+	if err != nil {
+		t.Fatalf("执行算术表达式失败：%v", err)
+	}
+
+	if got := environment.String(); got != "环境[基数=10, 总数=34]" {
+		t.Fatalf("算术表达式结果不正确：%q", got)
+	}
+}
+
+func TestRunDivisionByZeroReportsPosition(t *testing.T) {
+	program := parseSource(t, "设置 结果 = 10 / 0")
+
+	_, err := Run(program)
+	if err == nil {
+		t.Fatal("除数为零应该返回错误")
+	}
+	if got := err.Error(); got != "执行错误：除数不能为零，位置 1:14" {
+		t.Fatalf("除零错误不正确：%q", got)
+	}
+}
+
 func TestRunUndefinedVariableReportsError(t *testing.T) {
 	program := parseSource(t, "设置 总数 = 未知")
 

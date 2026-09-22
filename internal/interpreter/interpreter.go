@@ -1,6 +1,7 @@
 // Package interpreter 执行当前阶段已经支持的 AST。
 //
-// 现在只执行整数赋值。解释器先保持简单，作为后续编译后端的行为参考。
+// 现在只执行整数赋值和整数四则运算。解释器先保持简单，作为后续编译
+// 后端的行为参考。
 package interpreter
 
 import (
@@ -75,7 +76,7 @@ func Run(program ast.Program) (*Environment, error) {
 			}
 		}
 
-		value, err := evaluateValue(assignment.Value, environment)
+		value, err := evaluateExpression(assignment.Value, environment)
 		if err != nil {
 			return nil, err
 		}
@@ -86,7 +87,7 @@ func Run(program ast.Program) (*Environment, error) {
 	return environment, nil
 }
 
-func evaluateValue(expression ast.Expression, environment *Environment) (int64, error) {
+func evaluateExpression(expression ast.Expression, environment *Environment) (int64, error) {
 	switch value := expression.(type) {
 	case ast.IntegerLiteral:
 		return value.Value, nil
@@ -99,6 +100,37 @@ func evaluateValue(expression ast.Expression, environment *Environment) (int64, 
 			}
 		}
 		return result, nil
+	case ast.BinaryExpression:
+		left, err := evaluateExpression(value.Left, environment)
+		if err != nil {
+			return 0, err
+		}
+		right, err := evaluateExpression(value.Right, environment)
+		if err != nil {
+			return 0, err
+		}
+
+		switch value.Operator {
+		case ast.OperatorAdd:
+			return left + right, nil
+		case ast.OperatorSubtract:
+			return left - right, nil
+		case ast.OperatorMultiply:
+			return left * right, nil
+		case ast.OperatorDivide:
+			if right == 0 {
+				return 0, &Error{
+					Message: "除数不能为零",
+					Span:    value.Right.Span(),
+				}
+			}
+			return left / right, nil
+		default:
+			return 0, &Error{
+				Message: "当前不支持这种运算符",
+				Span:    value.Span(),
+			}
+		}
 	default:
 		return 0, &Error{
 			Message: "当前不支持这种表达式",

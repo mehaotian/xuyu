@@ -1,7 +1,8 @@
 // Package lexer 将源码切分为 Token。
 //
-// 当前实现覆盖空白、换行、关键字、标识符、整数和等号。Parser 负责
-// 组织结构，Interpreter 负责执行语义，Lexer 不在这两层之间猜测含义。
+// 当前实现覆盖空白、换行、关键字、标识符、整数、赋值号、四则运算符
+// 和括号。Parser 负责组织结构，Interpreter 负责执行语义，Lexer 不在
+// 这两层之间猜测含义。
 package lexer
 
 import (
@@ -83,15 +84,31 @@ func (l *Lexer) next() (token.Token, error) {
 	case unicode.IsDigit(r):
 		return l.readInteger(), nil
 	case r == '=':
-		l.advance()
-		return token.Token{
-			Kind:   token.KindEqual,
-			Lexeme: "=",
-			Span:   source.Span{Start: start, End: l.position()},
-		}, nil
+		return l.readSingleToken(start, r, token.KindEqual), nil
+	case r == '+':
+		return l.readSingleToken(start, r, token.KindPlus), nil
+	case r == '-':
+		return l.readSingleToken(start, r, token.KindMinus), nil
+	case r == '*':
+		return l.readSingleToken(start, r, token.KindStar), nil
+	case r == '/':
+		return l.readSingleToken(start, r, token.KindSlash), nil
+	case r == '(':
+		return l.readSingleToken(start, r, token.KindLeftParen), nil
+	case r == ')':
+		return l.readSingleToken(start, r, token.KindRightParen), nil
 	default:
 		l.advance()
 		return token.Token{}, l.errorAt(start, fmt.Sprintf("无法识别的字符 %q", string(r)))
+	}
+}
+
+func (l *Lexer) readSingleToken(start source.Position, r rune, kind token.Kind) token.Token {
+	l.advance()
+	return token.Token{
+		Kind:   kind,
+		Lexeme: string(r),
+		Span:   source.Span{Start: start, End: l.position()},
 	}
 }
 

@@ -1,6 +1,6 @@
 // Package ast 定义源码经过语法分析后的最小结构。
 //
-// 当前支持程序、多条赋值语句，以及整数和变量引用两种表达式。
+// 当前支持程序、多条赋值语句，以及整数、变量引用和二元运算三种表达式。
 // Statement 和 Expression 的边界保持独立，后续可以在不改动现有节点
 // 含义的前提下加入其他语句和表达式。
 package ast
@@ -108,4 +108,34 @@ func (v VariableReference) Span() source.Span {
 // String 返回变量引用的结构表示。
 func (v VariableReference) String() string {
 	return fmt.Sprintf("变量(%s)", v.Name)
+}
+
+// BinaryOperator 表示整数二元运算的符号。
+type BinaryOperator string
+
+const (
+	OperatorAdd      BinaryOperator = "+"
+	OperatorSubtract BinaryOperator = "-"
+	OperatorMultiply BinaryOperator = "*"
+	OperatorDivide   BinaryOperator = "/"
+)
+
+// BinaryExpression 表示两个整数表达式之间的一次运算。
+type BinaryExpression struct {
+	Left     Expression
+	Operator BinaryOperator
+	Right    Expression
+	Range    source.Span
+}
+
+func (BinaryExpression) expressionNode() {}
+
+// Span 返回二元表达式覆盖的源码范围。
+func (b BinaryExpression) Span() source.Span {
+	return b.Range
+}
+
+// String 返回二元表达式的紧凑结构表示。
+func (b BinaryExpression) String() string {
+	return fmt.Sprintf("二元(%s, %s, %s)", b.Operator, b.Left, b.Right)
 }

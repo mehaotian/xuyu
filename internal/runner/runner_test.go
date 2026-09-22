@@ -44,3 +44,19 @@ func TestRunFileExecutesMultipleAssignments(t *testing.T) {
 		t.Fatalf("多条赋值结果不正确：%q", got)
 	}
 }
+
+func TestRunFileExecutesArithmeticExpression(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "整数表达式.中")
+	if err := os.WriteFile(path, []byte("设置 基数 = 10\n设置 总数 = (基数 + 2) * 3 - 4 / 2\n"), 0o600); err != nil {
+		t.Fatalf("创建测试源码失败：%v", err)
+	}
+
+	environment, err := RunFile(path)
+	if err != nil {
+		t.Fatalf("运行表达式文件失败：%v", err)
+	}
+
+	if got := environment.String(); got != "环境[基数=10, 总数=34]" {
+		t.Fatalf("表达式文件结果不正确：%q", got)
+	}
+}
