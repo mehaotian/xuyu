@@ -1,0 +1,19 @@
+# 本地构建产物
+.build/
+bin/
+dist/
+*.test
+*.out
+coverage.out
+*.prof
+
+# 本地环境和编辑器文件
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.tmp
+*.log
+.env
+.env.*
+!.env.example
